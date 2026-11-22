@@ -1,0 +1,87 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. INTEREST.
+
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT CUSTOMERS ASSIGN TO "customers.dat"
+               ORGANIZATION IS LINE SEQUENTIAL.
+           SELECT REPORT-FILE ASSIGN TO "report.txt"
+               ORGANIZATION IS LINE SEQUENTIAL.
+
+       DATA DIVISION.
+       FILE SECTION.
+       FD CUSTOMERS.
+       01 CUSTOMER-REC.
+           05 CUST-ID      PIC 9(5).
+           05 CUST-NAME    PIC X(20).
+           05 CUST-BALANCE PIC 9(7)V99.
+       FD REPORT-FILE.
+       01 REPORT-LINE      PIC X(60).
+
+       WORKING-STORAGE SECTION.
+       01 WS-EOF           PIC X VALUE "N".
+           88 END-OF-FILE  VALUE "Y".
+       01 WS-RATE          PIC 9V9999 COMP-3 VALUE 0.0350.
+       01 WS-INTEREST      PIC 9(7)V99 COMP-3.
+       01 WS-TOTAL         PIC 9(9)V99 COMP-3 VALUE 0.
+
+       01 WS-HEADER.
+           05 FILLER       PIC X(5)  VALUE "ID".
+           05 FILLER       PIC X(2)  VALUE SPACES.
+           05 FILLER       PIC X(20) VALUE "NAME".
+           05 FILLER       PIC X(2)  VALUE SPACES.
+           05 FILLER       PIC X(10) VALUE "   BALANCE".
+           05 FILLER       PIC X(2)  VALUE SPACES.
+           05 FILLER       PIC X(10) VALUE "  INTEREST".
+
+       01 WS-SEPARATOR     PIC X(51) VALUE ALL "-".
+
+       01 WS-DETAIL.
+           05 DET-ID       PIC 9(5).
+           05 FILLER       PIC X(2) VALUE SPACES.
+           05 DET-NAME     PIC X(20).
+           05 FILLER       PIC X(2) VALUE SPACES.
+           05 DET-BALANCE  PIC ZZZ,ZZ9.99.
+           05 FILLER       PIC X(2) VALUE SPACES.
+           05 DET-INTEREST PIC ZZZ,ZZ9.99.
+
+       01 WS-TOTAL-LINE.
+           05 FILLER       PIC X(41) VALUE "TOTAL INTEREST:".
+           05 TOT-INTEREST PIC ZZZ,ZZ9.99.
+
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           OPEN INPUT CUSTOMERS OUTPUT REPORT-FILE
+
+           MOVE WS-HEADER TO REPORT-LINE
+           WRITE REPORT-LINE
+           MOVE WS-SEPARATOR TO REPORT-LINE
+           WRITE REPORT-LINE
+
+           PERFORM UNTIL END-OF-FILE
+               READ CUSTOMERS
+                   AT END SET END-OF-FILE TO TRUE
+                   NOT AT END PERFORM PROCESS-CUSTOMER
+               END-READ
+           END-PERFORM
+
+           MOVE WS-SEPARATOR TO REPORT-LINE
+           WRITE REPORT-LINE
+           MOVE WS-TOTAL TO TOT-INTEREST
+           MOVE WS-TOTAL-LINE TO REPORT-LINE
+           WRITE REPORT-LINE
+
+           CLOSE CUSTOMERS REPORT-FILE
+           DISPLAY "Report generated: report.txt"
+           STOP RUN.
+
+       PROCESS-CUSTOMER.
+           COMPUTE WS-INTEREST ROUNDED = CUST-BALANCE * WS-RATE
+           ADD WS-INTEREST TO WS-TOTAL
+           MOVE CUST-ID      TO DET-ID
+           MOVE CUST-NAME    TO DET-NAME
+           MOVE CUST-BALANCE TO DET-BALANCE
+           MOVE WS-INTEREST  TO DET-INTEREST
+           MOVE WS-DETAIL    TO REPORT-LINE
+           WRITE REPORT-LINE.
